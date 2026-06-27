@@ -1,0 +1,139 @@
+{% extends 'base.html' %}
+{% block title %}Inicio – GestorPass{% endblock %}
+
+{% block content %}
+<!-- Hero de búsqueda -->
+<div class="search-hero">
+  <div class="container">
+    <h1 class="mb-1"><i class="fas fa-search me-2"></i>Buscar entidad</h1>
+    <p class="lead mb-4">Ingresa la cédula, NIT o nombre de la persona o empresa</p>
+    <form method="GET" action="{{ url_for('main.dashboard') }}">
+      <div class="input-group input-group-lg" style="max-width:600px;">
+        <input type="text" name="q" class="form-control form-control-lg"
+               placeholder="Ej: 900123456 o Empresa S.A.S"
+               value="{{ query }}" autofocus>
+        <button class="btn btn-primary px-4" type="submit">
+          <i class="fas fa-search me-1"></i>Buscar
+        </button>
+        {% if query %}
+        <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-light">
+          <i class="fas fa-times"></i>
+        </a>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="container py-4">
+
+  <!-- Resultados de búsqueda -->
+  {% if query %}
+  <h5 class="mb-3">
+    {% if entities %}
+      <i class="fas fa-list me-2 text-primary"></i>
+      {{ entities|length }} resultado{{ 's' if entities|length != 1 }} para "<strong>{{ query }}</strong>"
+    {% else %}
+      <i class="fas fa-exclamation-circle me-2 text-warning"></i>
+      No se encontraron resultados para "<strong>{{ query }}</strong>"
+    {% endif %}
+  </h5>
+
+  {% if entities %}
+  <div class="row g-3 mb-4">
+    {% for e in entities %}
+    <div class="col-12 col-md-6 col-lg-4">
+      <a href="{{ url_for('main.entity_detail', entity_id=e.id) }}" class="text-decoration-none">
+        <div class="card h-100 card-hover">
+          <div class="card-body">
+            <div class="d-flex align-items-start gap-3">
+              <div class="rounded-circle bg-primary bg-opacity-10 p-3 text-primary">
+                <i class="fas fa-{{ 'building' if e.entity_type == 'empresa' else 'user' }} fa-lg"></i>
+              </div>
+              <div class="flex-grow-1 overflow-hidden">
+                <h6 class="mb-1 text-dark fw-bold text-truncate">{{ e.name }}</h6>
+                <div class="d-flex gap-2 flex-wrap">
+                  <span class="badge bg-secondary">
+                    <i class="fas fa-id-card me-1"></i>{{ e.cedula_nit }}
+                  </span>
+                  <span class="badge bg-{{ 'info' if e.entity_type == 'empresa' else 'success' }} bg-opacity-75">
+                    {{ 'Empresa' if e.entity_type == 'empresa' else 'Persona' }}
+                  </span>
+                </div>
+                <p class="text-muted small mt-1 mb-0">
+                  <i class="fas fa-key me-1"></i>{{ e.credentials|length }} contraseña(s)
+                </p>
+              </div>
+              <i class="fas fa-chevron-right text-muted mt-1"></i>
+            </div>
+          </div>
+        </div>
+      </a>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% else %}
+  <!-- Estadísticas y accesos rápidos cuando no hay búsqueda -->
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+      <div class="card text-center p-3">
+        <div class="fs-2 fw-bold text-primary">{{ total_entities }}</div>
+        <div class="text-muted small">Entidades</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card text-center p-3">
+        <div class="fs-2 fw-bold text-success">{{ total_credentials }}</div>
+        <div class="text-muted small">Contraseñas</div>
+      </div>
+    </div>
+    {% if current_user.role in ['admin', 'editor'] %}
+    <div class="col-12 col-md-6">
+      <a href="{{ url_for('main.new_entity') }}" class="card h-100 text-decoration-none d-flex flex-row align-items-center p-3 gap-3">
+        <div class="rounded-circle bg-primary text-white p-3">
+          <i class="fas fa-plus fa-lg"></i>
+        </div>
+        <div>
+          <div class="fw-bold text-dark">Agregar nueva entidad</div>
+          <div class="text-muted small">Persona o empresa</div>
+        </div>
+      </a>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Recientes -->
+  <h6 class="text-muted mb-3"><i class="fas fa-clock me-2"></i>Últimas entidades ingresadas</h6>
+  <div class="row g-2">
+    {% for e in recientes %}
+    <div class="col-12 col-md-6">
+      <a href="{{ url_for('main.entity_detail', entity_id=e.id) }}" class="text-decoration-none">
+        <div class="card p-3">
+          <div class="d-flex align-items-center gap-3">
+            <div class="text-{{ 'primary' if e.entity_type == 'empresa' else 'success' }}">
+              <i class="fas fa-{{ 'building' if e.entity_type == 'empresa' else 'user' }} fa-lg"></i>
+            </div>
+            <div class="flex-grow-1 overflow-hidden">
+              <div class="fw-semibold text-dark text-truncate">{{ e.name }}</div>
+              <div class="text-muted small">{{ e.cedula_nit }}</div>
+            </div>
+            <span class="badge bg-light text-dark">{{ e.credentials|length }} clave(s)</span>
+          </div>
+        </div>
+      </a>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<style>
+.card-hover { transition: transform .15s, box-shadow .15s; cursor: pointer; }
+.card-hover:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,.12); }
+</style>
+{% endblock %}

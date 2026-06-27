@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+{% block title %}Usuarios – GestorPass{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h3 class="mb-0"><i class="fas fa-users me-2 text-primary"></i>Gestión de Usuarios</h3>
+      <p class="text-muted mb-0">{{ users|length }} usuario(s) registrados</p>
+    </div>
+    <a href="{{ url_for('main.new_user') }}" class="btn btn-primary">
+      <i class="fas fa-user-plus me-1"></i>Nuevo usuario
+    </a>
+  </div>
+
+  <div class="card">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Usuario</th>
+            <th>Correo</th>
+            <th>Rol</th>
+            <th>Estado</th>
+            <th>Creado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for u in users %}
+          <tr>
+            <td>
+              <i class="fas fa-user-circle me-2 text-{{ u.role_color }}"></i>
+              <strong>{{ u.username }}</strong>
+              {% if u.id == current_user.id %}
+              <span class="badge bg-light text-dark ms-1 small">Tú</span>
+              {% endif %}
+            </td>
+            <td class="text-muted">{{ u.email }}</td>
+            <td>
+              <span class="badge badge-{{ u.role }}">{{ u.role_label }}</span>
+            </td>
+            <td>
+              {% if u.is_active %}
+              <span class="badge bg-success"><i class="fas fa-check me-1"></i>Activo</span>
+              {% else %}
+              <span class="badge bg-secondary"><i class="fas fa-ban me-1"></i>Inactivo</span>
+              {% endif %}
+            </td>
+            <td class="text-muted small">{{ u.created_at.strftime('%d/%m/%Y') }}</td>
+            <td>
+              <a href="{{ url_for('main.edit_user', user_id=u.id) }}"
+                 class="btn btn-sm btn-outline-primary">
+                <i class="fas fa-edit me-1"></i>Editar
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="alert alert-info mt-3">
+    <i class="fas fa-info-circle me-2"></i>
+    <strong>Roles:</strong>
+    <span class="badge badge-admin ms-2">Administrador</span> gestión total, incluyendo usuarios y sitios.
+    <span class="badge badge-editor ms-2">Editor</span> puede agregar y modificar contraseñas.
+    <span class="badge badge-viewer ms-2">Visualizador</span> solo puede consultar.
+  </div>
+</div>
+{% endblock %}

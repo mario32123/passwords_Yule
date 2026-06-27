@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Iniciar sesión – GestorPass</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+  <style>
+    body {
+      background: linear-gradient(135deg,#0d1b2a 0%,#1b3a5c 60%,#215a96 100%);
+      min-height: 100vh; display: flex; align-items: center;
+    }
+    .login-card {
+      border: none; border-radius: 1rem;
+      box-shadow: 0 20px 60px rgba(0,0,0,.35);
+      max-width: 420px; width: 100%;
+    }
+    .logo-circle {
+      width: 72px; height: 72px; border-radius: 50%;
+      background: linear-gradient(135deg,#0d6efd,#0a58ca);
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 1rem;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="row justify-content-center">
+    <div class="col-12 col-md-6 col-lg-5">
+      <div class="card login-card p-4 p-md-5">
+        <div class="text-center mb-4">
+          <div class="logo-circle">
+            <i class="fas fa-shield-halved fa-2x text-white"></i>
+          </div>
+          <h2 class="fw-bold mb-0">GestorPass</h2>
+          <p class="text-muted small">Gestión de contraseñas empresarial</p>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for cat, msg in messages %}
+          <div class="alert alert-{{ cat }} py-2">
+            <i class="fas fa-exclamation-triangle me-2"></i>{{ msg }}
+          </div>
+          {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        <form method="POST" autocomplete="off">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Usuario</label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="fas fa-user text-muted"></i></span>
+              <input type="text" name="username" class="form-control form-control-lg"
+                     placeholder="Nombre de usuario" required autofocus>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Contraseña maestra</label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="fas fa-lock text-muted"></i></span>
+              <input type="password" name="password" id="pwd" class="form-control form-control-lg"
+                     placeholder="••••••••" required>
+              <button class="btn btn-outline-secondary" type="button"
+                      onclick="togglePwd()">
+                <i class="fas fa-eye" id="pwd-icon"></i>
+              </button>
+            </div>
+          </div>
+          <div class="mb-4 form-check">
+            <input class="form-check-input" type="checkbox" name="remember" id="remember">
+            <label class="form-check-label text-muted" for="remember">Mantener sesión activa</label>
+          </div>
+          <button type="submit" class="btn btn-primary btn-lg w-100">
+            <i class="fas fa-right-to-bracket me-2"></i>Ingresar
+          </button>
+        </form>
+      </div>
+      <p class="text-center text-white-50 mt-3 small">
+        <i class="fas fa-lock me-1"></i>Conexión segura · Datos cifrados
+      </p>
+    </div>
+  </div>
+</div>
+<script>
+function togglePwd() {
+  const p = document.getElementById('pwd');
+  const i = document.getElementById('pwd-icon');
+  if (p.type === 'password') { p.type = 'text'; i.classList.replace('fa-eye','fa-eye-slash'); }
+  else { p.type = 'password'; i.classList.replace('fa-eye-slash','fa-eye'); }
+}
+</script>
+</body>
+</html>

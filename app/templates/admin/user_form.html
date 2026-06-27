@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+{% set editing = user is not none %}
+{% block title %}{{ 'Editar' if editing else 'Nuevo' }} usuario – GestorPass{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width:540px;">
+  <nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{{ url_for('main.admin_users') }}">Usuarios</a></li>
+      <li class="breadcrumb-item active">{{ 'Editar' if editing else 'Nuevo usuario' }}</li>
+    </ol>
+  </nav>
+
+  <div class="card">
+    <div class="card-header d-flex align-items-center gap-2">
+      <i class="fas fa-{{ 'user-edit' if editing else 'user-plus' }} text-primary"></i>
+      {{ 'Editar usuario' if editing else 'Nuevo usuario' }}
+    </div>
+    <div class="card-body">
+      <form method="POST" autocomplete="off">
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Nombre de usuario <span class="text-danger">*</span></label>
+          <input type="text" name="username" class="form-control"
+                 value="{{ user.username if editing else '' }}"
+                 {{ 'readonly' if editing else 'required' }}
+                 placeholder="sin espacios, sin tildes">
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Correo electrónico <span class="text-danger">*</span></label>
+          <input type="email" name="email" class="form-control"
+                 value="{{ user.email if editing else '' }}"
+                 required placeholder="correo@empresa.com">
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold">
+            Contraseña
+            {% if editing %}<span class="text-muted fw-normal">(dejar en blanco para no cambiar)</span>{% endif %}
+          </label>
+          <div class="input-group">
+            <input type="password" name="password" id="upwd" class="form-control"
+                   placeholder="{{ '(sin cambios)' if editing else 'Mínimo 6 caracteres' }}"
+                   {{ '' if editing else 'required minlength=6' }}>
+            <button class="btn btn-outline-secondary" type="button" onclick="toggleU()">
+              <i class="fas fa-eye" id="upwd-icon"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Rol <span class="text-danger">*</span></label>
+          <select name="role" class="form-select">
+            <option value="viewer"  {{ 'selected' if editing and user.role=='viewer' }}>
+              Visualizador – solo consulta
+            </option>
+            <option value="editor"  {{ 'selected' if editing and user.role=='editor' }}>
+              Editor – puede agregar y modificar contraseñas
+            </option>
+            <option value="admin"   {{ 'selected' if editing and user.role=='admin' }}>
+              Administrador – acceso total
+            </option>
+          </select>
+        </div>
+
+        {% if editing %}
+        <div class="mb-4 form-check form-switch">
+          <input class="form-check-input" type="checkbox" name="is_active" id="sw-active"
+                 {{ 'checked' if user.is_active }}>
+          <label class="form-check-label" for="sw-active">Usuario activo</label>
+        </div>
+        {% endif %}
+
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn btn-primary">
+            <i class="fas fa-save me-1"></i>{{ 'Guardar cambios' if editing else 'Crear usuario' }}
+          </button>
+          <a href="{{ url_for('main.admin_users') }}" class="btn btn-outline-secondary">Cancelar</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function toggleU() {
+  const i = document.getElementById('upwd');
+  const icon = document.getElementById('upwd-icon');
+  if (i.type==='password'){i.type='text';icon.classList.replace('fa-eye','fa-eye-slash');}
+  else{i.type='password';icon.classList.replace('fa-eye-slash','fa-eye');}
+}
+</script>
+{% endblock %}

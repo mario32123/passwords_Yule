@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+{% block title %}Sitios Web – GestorPass{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h3 class="mb-0"><i class="fas fa-globe me-2 text-success"></i>Sitios Web</h3>
+      <p class="text-muted mb-0">{{ sites|length }} sitio(s) configurados</p>
+    </div>
+    <a href="{{ url_for('main.new_site') }}" class="btn btn-success">
+      <i class="fas fa-plus me-1"></i>Nuevo sitio
+    </a>
+  </div>
+
+  {% set cat_labels = {
+    'impuestos': ('Impuestos y Tributario','calculator','danger'),
+    'aportes':   ('Aportes y Nómina','users','primary'),
+    'correo':    ('Correos','envelope','info'),
+    'camara':    ('Cámara de Comercio','store','warning'),
+    'banco':     ('Bancos','university','success'),
+    'otro':      ('Otros','ellipsis-h','secondary'),
+  } %}
+
+  {% for cat_key, (cat_label, cat_icon, cat_color) in cat_labels.items() %}
+  {% set group = sites | selectattr('category','eq',cat_key) | list %}
+  {% if group %}
+  <h6 class="text-muted mt-4 mb-2">
+    <i class="fas fa-{{ cat_icon }} me-2 text-{{ cat_color }}"></i>{{ cat_label }}
+  </h6>
+  <div class="card mb-2">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Nombre</th>
+            <th>URL</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in group %}
+          <tr class="{{ '' if s.is_active else 'table-secondary opacity-50' }}">
+            <td><strong>{{ s.name }}</strong></td>
+            <td>
+              {% if s.url %}
+              <a href="{{ s.url }}" target="_blank" class="text-muted text-decoration-none small">
+                <i class="fas fa-external-link-alt me-1"></i>{{ s.url[:50] }}{% if s.url|length>50 %}…{% endif %}
+              </a>
+              {% else %}
+              <span class="text-muted small">—</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if s.is_active %}
+              <span class="badge bg-success">Activo</span>
+              {% else %}
+              <span class="badge bg-secondary">Inactivo</span>
+              {% endif %}
+            </td>
+            <td>
+              <a href="{{ url_for('main.edit_site', site_id=s.id) }}"
+                 class="btn btn-sm btn-outline-primary">
+                <i class="fas fa-edit me-1"></i>Editar
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+  {% endfor %}
+</div>
+{% endblock %}
