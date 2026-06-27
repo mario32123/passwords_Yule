@@ -10,13 +10,6 @@ services:
       - key: SECRET_KEY
         generateValue: true
       - key: DATABASE_URL
-        fromDatabase:
-          name: gestorpass-db
-          property: connectionString
+        sync: false   # Configurar manualmente: URL de Supabase
       - key: ENCRYPTION_KEY
-        sync: false   # <-- DEBES configurar este valor manualmente en el dashboard de Render
-
-databases:
-  - name: gestorpass-db
-    databaseName: gestorpass
-    plan: free
+        sync: false   # Configurar manualmente en el dashboard de Render
