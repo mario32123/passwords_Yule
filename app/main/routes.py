@@ -1,12 +1,12 @@
 from collections import defaultdict
-from datetime import datetime
+from datetime import datetime, date, timedelta
 from functools import wraps
 
 from flask import render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required, current_user
 
 from app import db
-from app.models import Entity, Site, Credential, User, AuditLog
+from app.models import Entity, Site, Credential, User, AuditLog, TaxDeadline, get_nit_last_digit
 from app.main import bp
 
 
@@ -71,12 +71,38 @@ def dashboard():
             if e.id not in cred_counts:
                 cred_counts[e.id] = Credential.query.filter_by(entity_id=e.id).count()
 
+        # Alertas tributarias: vencimientos en los próximos 2 días (solo empresas)
+        today = date.today()
+        limit_date = today + timedelta(days=2)
+        upcoming_deadlines = TaxDeadline.query.filter(
+            TaxDeadline.deadline_date >= today,
+            TaxDeadline.deadline_date <= limit_date,
+        ).order_by(TaxDeadline.deadline_date, TaxDeadline.tax_type).all()
+
+        # Agrupar por dígito NIT y buscar empresas que aplican
+        tax_alerts = []
+        if upcoming_deadlines:
+            empresas = Entity.query.filter_by(entity_type='empresa').all()
+            for deadline in upcoming_deadlines:
+                matching = [e for e in empresas
+                            if get_nit_last_digit(e.cedula_nit) == deadline.nit_digit]
+                for empresa in matching:
+                    days_left = (deadline.deadline_date - today).days
+                    tax_alerts.append({
+                        'empresa': empresa,
+                        'deadline': deadline,
+                        'days_left': days_left,
+                    })
+            # Ordenar: primero los que vencen hoy, luego mañana, luego pasado
+            tax_alerts.sort(key=lambda x: (x['days_left'], x['empresa'].name))
+
         return render_template('dashboard.html',
                                entities=entities, query=q,
                                recientes=recientes,
                                cred_counts=cred_counts,
                                total_entities=total_entities,
-                               total_credentials=total_credentials)
+                               total_credentials=total_credentials,
+                               tax_alerts=tax_alerts)
     except Exception as e:
         import traceback
         print('ERROR EN DASHBOARD:', traceback.format_exc())
@@ -417,3 +443,117 @@ def admin_audit():
             .order_by(AuditLog.timestamp.desc())
             .paginate(page=page, per_page=50, error_out=False))
     return render_template('admin/audit.html', logs=logs)
+
+
+# ── Admin: Calendario Tributario ──────────────────────────────────────────
+
+@bp.route('/admin/calendar')
+@login_required
+@admin_required
+def admin_calendar():
+    year = request.args.get('year', date.today().year, type=int)
+    tax_type_filter = request.args.get('tax_type', '')
+    q = TaxDeadline.query.filter_by(year=year)
+    if tax_type_filter:
+        q = q.filter_by(tax_type=tax_type_filter)
+    deadlines = q.order_by(TaxDeadline.deadline_date, TaxDeadline.nit_digit).all()
+    years_available = db.session.query(TaxDeadline.year).distinct().order_by(TaxDeadline.year).all()
+    years_available = [r[0] for r in years_available]
+    return render_template('admin/calendar.html',
+                           deadlines=deadlines,
+                           year=year,
+                           tax_type_filter=tax_type_filter,
+                           years_available=years_available,
+                           TAX_TYPES=TaxDeadline.TAX_TYPES)
+
+
+@bp.route('/admin/calendar/new', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def new_calendar_period():
+    if request.method == 'POST':
+        tax_type = request.form.get('tax_type', '').strip()
+        period_label = request.form.get('period_label', '').strip()
+        year = request.form.get('year', '', type=int) or int(request.form.get('year', 0))
+        errors = []
+
+        if not tax_type or tax_type not in TaxDeadline.TAX_TYPES:
+            errors.append('Tipo de impuesto inválido.')
+        if not period_label:
+            errors.append('El período es obligatorio.')
+
+        # Leer las 10 fechas por dígito (0–9)
+        dates_by_digit = {}
+        for digit in range(10):
+            d_str = request.form.get(f'date_{digit}', '').strip()
+            if d_str:
+                try:
+                    dates_by_digit[digit] = datetime.strptime(d_str, '%Y-%m-%d').date()
+                except ValueError:
+                    errors.append(f'Fecha inválida para dígito {digit}.')
+
+        if not dates_by_digit:
+            errors.append('Debes ingresar al menos una fecha.')
+
+        if errors:
+            for e in errors:
+                flash(e, 'danger')
+            return render_template('admin/calendar_form.html',
+                                   TAX_TYPES=TaxDeadline.TAX_TYPES,
+                                   default_year=year or date.today().year)
+
+        added = 0
+        for digit, d in dates_by_digit.items():
+            existing = TaxDeadline.query.filter_by(
+                tax_type=tax_type, period_label=period_label,
+                nit_digit=digit, year=d.year).first()
+            if existing:
+                existing.deadline_date = d
+            else:
+                db.session.add(TaxDeadline(
+                    tax_type=tax_type,
+                    period_label=period_label,
+                    nit_digit=digit,
+                    deadline_date=d,
+                    year=d.year,
+                ))
+                added += 1
+        _log('create', 'calendar', 0,
+             f'Agregó/actualizó período {period_label} ({tax_type}) con {len(dates_by_digit)} fechas')
+        db.session.commit()
+        flash(f'Período "{period_label}" guardado ({added} nuevos registros).', 'success')
+        return redirect(url_for('main.admin_calendar', year=list(dates_by_digit.values())[0].year))
+
+    return render_template('admin/calendar_form.html',
+                           TAX_TYPES=TaxDeadline.TAX_TYPES,
+                           default_year=date.today().year)
+
+
+@bp.route('/admin/calendar/<int:deadline_id>/delete', methods=['POST'])
+@login_required
+@admin_required
+def delete_calendar_entry(deadline_id):
+    entry = TaxDeadline.query.get_or_404(deadline_id)
+    year = entry.year
+    _log('delete', 'calendar', deadline_id,
+         f'Eliminó {entry.tax_label} – {entry.period_label} (dígito {entry.nit_digit})')
+    db.session.delete(entry)
+    db.session.commit()
+    flash('Fecha eliminada del calendario.', 'success')
+    return redirect(url_for('main.admin_calendar', year=year))
+
+
+@bp.route('/admin/calendar/delete-year', methods=['POST'])
+@login_required
+@admin_required
+def delete_calendar_year():
+    year = request.form.get('year', type=int)
+    if not year:
+        flash('Año inválido.', 'danger')
+        return redirect(url_for('main.admin_calendar'))
+    count = TaxDeadline.query.filter_by(year=year).count()
+    TaxDeadline.query.filter_by(year=year).delete()
+    _log('delete', 'calendar', 0, f'Eliminó calendario completo del año {year} ({count} registros)')
+    db.session.commit()
+    flash(f'Calendario {year} eliminado ({count} registros).', 'success')
+    return redirect(url_for('main.admin_calendar'))

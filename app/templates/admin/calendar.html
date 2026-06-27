@@ -1,0 +1,138 @@
+{% extends 'base.html' %}
+{% block title %}Calendario Tributario – GestorPass{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h3 class="mb-0"><i class="fas fa-calendar-alt me-2 text-warning"></i>Calendario Tributario</h3>
+      <p class="text-muted mb-0">DIAN – Gestiona las fechas de vencimiento por año</p>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{{ url_for('main.new_calendar_period') }}" class="btn btn-warning text-dark">
+        <i class="fas fa-plus me-1"></i>Agregar período
+      </a>
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <div class="card mb-4">
+    <div class="card-body py-2">
+      <form method="GET" class="d-flex gap-3 flex-wrap align-items-end">
+        <div>
+          <label class="form-label small fw-semibold mb-1">Año</label>
+          <select name="year" class="form-select form-select-sm" onchange="this.form.submit()">
+            {% for y in years_available %}
+            <option value="{{ y }}" {{ 'selected' if y == year }}>{{ y }}</option>
+            {% endfor %}
+            {% if year not in years_available %}
+            <option value="{{ year }}" selected>{{ year }}</option>
+            {% endif %}
+          </select>
+        </div>
+        <div>
+          <label class="form-label small fw-semibold mb-1">Tipo de impuesto</label>
+          <select name="tax_type" class="form-select form-select-sm" onchange="this.form.submit()">
+            <option value="">— Todos —</option>
+            {% for k, (label, color, icon) in TAX_TYPES.items() %}
+            <option value="{{ k }}" {{ 'selected' if k == tax_type_filter }}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="ms-auto">
+          <span class="text-muted small">{{ deadlines|length }} registros</span>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Borrar año completo -->
+  {% if deadlines %}
+  <div class="d-flex justify-content-end mb-3">
+    <button class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteYearModal">
+      <i class="fas fa-trash me-1"></i>Borrar año {{ year }} completo
+    </button>
+  </div>
+  {% endif %}
+
+  <!-- Tabla de fechas agrupadas por tipo -->
+  {% if deadlines %}
+  {% for tax_key, (tax_label, tax_color, tax_icon) in TAX_TYPES.items() %}
+  {% set group = deadlines | selectattr('tax_type', 'equalto', tax_key) | list %}
+  {% if group %}
+  <h6 class="mt-4 mb-2">
+    <span class="badge bg-{{ tax_color }} fs-6">
+      <i class="fas {{ tax_icon }} me-1"></i>{{ tax_label }}
+    </span>
+  </h6>
+  <div class="card mb-3">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0 small">
+        <thead class="table-light">
+          <tr>
+            <th>Período</th>
+            <th>Dígito NIT</th>
+            <th>Fecha límite</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for entry in group %}
+          <tr>
+            <td>{{ entry.period_label }}</td>
+            <td><span class="badge bg-secondary">{{ entry.nit_digit }}</span></td>
+            <td>{{ entry.deadline_date.strftime('%d/%m/%Y') }}</td>
+            <td class="text-end">
+              <form method="POST"
+                    action="{{ url_for('main.delete_calendar_entry', deadline_id=entry.id) }}"
+                    onsubmit="return confirm('¿Eliminar esta fecha?')">
+                <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-2">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+  {% endfor %}
+
+  {% else %}
+  <div class="text-center text-muted py-5">
+    <i class="fas fa-calendar-times fa-3x mb-3 opacity-25"></i>
+    <p>No hay fechas registradas para {{ year }}.</p>
+    <a href="{{ url_for('main.new_calendar_period') }}" class="btn btn-warning text-dark">
+      <i class="fas fa-plus me-1"></i>Agregar período
+    </a>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Modal confirmar borrar año -->
+<div class="modal fade" id="deleteYearModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title text-danger"><i class="fas fa-exclamation-triangle me-2"></i>Borrar año {{ year }}</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p>¿Estás seguro de que deseas eliminar <strong>todas las fechas del año {{ year }}</strong>?</p>
+        <p class="text-muted small">Esta acción no se puede deshacer. Úsala cuando vayas a cargar el calendario de un nuevo año.</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <form method="POST" action="{{ url_for('main.delete_calendar_year') }}">
+          <input type="hidden" name="year" value="{{ year }}">
+          <button type="submit" class="btn btn-danger">
+            <i class="fas fa-trash me-1"></i>Eliminar año {{ year }}
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

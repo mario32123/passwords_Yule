@@ -156,3 +156,42 @@ class AuditLog(db.Model):
     @property
     def action_icon(self):
         return self.ACTION_ICONS.get(self.action, ('secondary', 'circle'))[1]
+
+
+def get_nit_last_digit(cedula_nit):
+    nit = cedula_nit.strip().replace(' ', '').replace('.', '')
+    if '-' in nit:
+        nit = nit.split('-')[0]
+    digits = ''.join(c for c in nit if c.isdigit())
+    return int(digits[-1]) if digits else None
+
+
+class TaxDeadline(db.Model):
+    __tablename__ = 'tax_deadlines'
+
+    id = db.Column(db.Integer, primary_key=True)
+    tax_type = db.Column(db.String(50), nullable=False)
+    period_label = db.Column(db.String(100), nullable=False)
+    nit_digit = db.Column(db.Integer, nullable=False)
+    deadline_date = db.Column(db.Date, nullable=False)
+    year = db.Column(db.Integer, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    TAX_TYPES = {
+        'retefuente':       ('Retención en la Fuente', 'warning',  'fa-percentage'),
+        'iva_bimestral':    ('IVA Bimestral',          'primary',  'fa-receipt'),
+        'iva_cuatrimestral':('IVA Cuatrimestral',      'info',     'fa-file-invoice'),
+        'renta_juridica':   ('Renta Persona Jurídica', 'danger',   'fa-building'),
+    }
+
+    @property
+    def tax_label(self):
+        return self.TAX_TYPES.get(self.tax_type, (self.tax_type, 'secondary', 'fa-file'))[0]
+
+    @property
+    def tax_color(self):
+        return self.TAX_TYPES.get(self.tax_type, (self.tax_type, 'secondary', 'fa-file'))[1]
+
+    @property
+    def tax_icon(self):
+        return self.TAX_TYPES.get(self.tax_type, (self.tax_type, 'secondary', 'fa-file'))[2]
