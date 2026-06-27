@@ -38,6 +38,16 @@ def create_app():
         db.create_all()
         _seed_data()
 
+    @app.errorhandler(500)
+    def internal_error(error):
+        import traceback
+        print('=== ERROR 500 ===')
+        print(traceback.format_exc())
+        print('================')
+        db.session.rollback()
+        from flask import render_template as rt
+        return rt('error500.html'), 500
+
     return app
 
 

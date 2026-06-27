@@ -48,23 +48,39 @@ def _log(action, entity_type, entity_id, description):
 @bp.route('/')
 @login_required
 def dashboard():
-    q = request.args.get('q', '').strip()
-    entities = []
-    if q:
-        entities = Entity.query.filter(
-            db.or_(
-                Entity.cedula_nit.ilike(f'%{q}%'),
-                Entity.name.ilike(f'%{q}%'),
-            )
-        ).order_by(Entity.name).all()
-    recientes = Entity.query.order_by(Entity.created_at.desc()).limit(8).all()
-    total_entities = Entity.query.count()
-    total_credentials = Credential.query.count()
-    return render_template('dashboard.html',
-                           entities=entities, query=q,
-                           recientes=recientes,
-                           total_entities=total_entities,
-                           total_credentials=total_credentials)
+    try:
+        q = request.args.get('q', '').strip()
+        entities = []
+        if q:
+            entities = Entity.query.filter(
+                db.or_(
+                    Entity.cedula_nit.ilike(f'%{q}%'),
+                    Entity.name.ilike(f'%{q}%'),
+                )
+            ).order_by(Entity.name).all()
+
+        recientes = Entity.query.order_by(Entity.created_at.desc()).limit(8).all()
+        total_entities = Entity.query.count()
+        total_credentials = Credential.query.count()
+
+        # Precomputar conteo de credenciales para evitar lazy load en el template
+        cred_counts = {}
+        for e in recientes:
+            cred_counts[e.id] = Credential.query.filter_by(entity_id=e.id).count()
+        for e in entities:
+            if e.id not in cred_counts:
+                cred_counts[e.id] = Credential.query.filter_by(entity_id=e.id).count()
+
+        return render_template('dashboard.html',
+                               entities=entities, query=q,
+                               recientes=recientes,
+                               cred_counts=cred_counts,
+                               total_entities=total_entities,
+                               total_credentials=total_credentials)
+    except Exception as e:
+        import traceback
+        print('ERROR EN DASHBOARD:', traceback.format_exc())
+        raise
 
 
 # ── Entidades ─────────────────────────────────────────────────────────────
