@@ -174,6 +174,23 @@ def new_credential(entity_id):
 
     if request.method == 'POST':
         site_id = request.form.get('site_id', '')
+        custom_name = request.form.get('custom_site_name', '').strip()
+        custom_url  = request.form.get('custom_site_url', '').strip()
+
+        # Si eligió "personalizado", crear el sitio al vuelo
+        if site_id == 'custom':
+            if not custom_name:
+                flash('Debes ingresar el nombre del sitio personalizado.', 'danger')
+                return render_template('credential_form.html', entity=entity, sites=sites, credential=None)
+            existing = Site.query.filter_by(name=custom_name).first()
+            if existing:
+                site_obj = existing
+            else:
+                site_obj = Site(name=custom_name, url=custom_url, category='otro')
+                db.session.add(site_obj)
+                db.session.flush()
+            site_id = str(site_obj.id)
+
         if not site_id:
             flash('Debes seleccionar un sitio web.', 'danger')
             return render_template('credential_form.html', entity=entity, sites=sites, credential=None)

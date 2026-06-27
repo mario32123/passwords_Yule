@@ -65,7 +65,7 @@ def _seed_data():
         ('DIAN',                   'https://www.dian.gov.co',             'impuestos'),
         ('MUISCA - DIAN',          'https://muisca.dian.gov.co',          'impuestos'),
         ('Secretaría Hacienda',    '',                                     'impuestos'),
-        ('Aportes en Línea',       'https://www.aportesenlínea.com',      'aportes'),
+        ('Aportes en Línea',       'https://www.aportesenlinea.com/independientes/inicio', 'aportes'),
         ('Mi Planilla',            'https://www.miplanilla.com',           'aportes'),
         ('PILA',                   '',                                     'aportes'),
         ('Cámara de Comercio CCB', 'https://www.ccb.org.co',              'camara'),
@@ -81,7 +81,10 @@ def _seed_data():
     ]
 
     for nombre, url, categoria in sitios_default:
-        if not Site.query.filter_by(name=nombre).first():
+        existing = Site.query.filter_by(name=nombre).first()
+        if not existing:
             db.session.add(Site(name=nombre, url=url, category=categoria))
+        elif existing.url != url and url:
+            existing.url = url  # actualiza URL si cambió
 
     db.session.commit()
