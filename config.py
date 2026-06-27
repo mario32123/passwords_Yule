@@ -1,4 +1,5 @@
 import os
+from sqlalchemy.pool import NullPool
 
 class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY', 'dev-key-change-in-production')
@@ -9,6 +10,12 @@ class Config:
     if DATABASE_URL.startswith('postgres://'):
         DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
     SQLALCHEMY_DATABASE_URI = DATABASE_URL
+
+    # Evita que los workers de gunicorn hereden conexiones SSL corruptas
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        'pool_pre_ping': True,
+        'poolclass': NullPool,
+    }
 
     ENCRYPTION_KEY = os.environ.get('ENCRYPTION_KEY', '')
 
