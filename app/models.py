@@ -46,6 +46,7 @@ class Entity(db.Model):
     cedula_nit = db.Column(db.String(20), unique=True, nullable=False, index=True)
     name = db.Column(db.String(200), nullable=False)
     entity_type = db.Column(db.String(20), nullable=False, default='persona')  # persona, empresa
+    place = db.Column(db.String(100))  # Lugar / municipio de la empresa
     notes = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     created_by_id = db.Column(db.Integer, db.ForeignKey('users.id'))

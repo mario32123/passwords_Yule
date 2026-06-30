@@ -56,6 +56,7 @@ def dashboard():
                 db.or_(
                     Entity.cedula_nit.ilike(f'%{q}%'),
                     Entity.name.ilike(f'%{q}%'),
+                    Entity.place.ilike(f'%{q}%'),
                 )
             ).order_by(Entity.name).all()
 
@@ -149,6 +150,7 @@ def new_entity():
         cedula = request.form.get('cedula_nit', '').strip()
         name = request.form.get('name', '').strip()
         etype = request.form.get('entity_type', 'persona')
+        place = request.form.get('place', '').strip()
         notes = request.form.get('notes', '').strip()
 
         if not cedula or not name:
@@ -160,7 +162,7 @@ def new_entity():
             return render_template('entity_form.html', entity=None)
 
         entity = Entity(cedula_nit=cedula, name=name, entity_type=etype,
-                        notes=notes, created_by_id=current_user.id)
+                        place=place, notes=notes, created_by_id=current_user.id)
         db.session.add(entity)
         db.session.flush()
         _log('create', 'entity', entity.id, f'Creó entidad: {name} ({cedula})')
@@ -180,6 +182,7 @@ def edit_entity(entity_id):
     if request.method == 'POST':
         entity.name = request.form.get('name', '').strip()
         entity.entity_type = request.form.get('entity_type', entity.entity_type)
+        entity.place = request.form.get('place', '').strip()
         entity.notes = request.form.get('notes', '').strip()
         _log('update', 'entity', entity.id, f'Modificó entidad: {entity.name}')
         db.session.commit()

@@ -46,6 +46,13 @@
         </div>
 
         <div class="mb-3">
+          <label class="form-label fw-semibold">Lugar / Municipio</label>
+          <input type="text" name="place" class="form-control"
+                 value="{{ entity.place if editing else '' }}"
+                 placeholder="Ej: Florencia, Morelia, San Vicente...">
+        </div>
+
+        <div class="mb-3">
           <label class="form-label fw-semibold">Tipo</label>
           <div class="d-flex gap-4">
             <div class="form-check">
