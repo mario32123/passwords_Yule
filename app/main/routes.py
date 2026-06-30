@@ -72,9 +72,9 @@ def dashboard():
             if e.id not in cred_counts:
                 cred_counts[e.id] = Credential.query.filter_by(entity_id=e.id).count()
 
-        # Alertas tributarias: vencimientos en los próximos 2 días (solo empresas)
+        # Alertas tributarias: vencimientos en los próximos 15 días (solo empresas)
         today = date.today()
-        limit_date = today + timedelta(days=2)
+        limit_date = today + timedelta(days=15)
         upcoming_deadlines = TaxDeadline.query.filter(
             TaxDeadline.deadline_date >= today,
             TaxDeadline.deadline_date <= limit_date,
@@ -111,6 +111,34 @@ def dashboard():
 
 
 # ── Entidades ─────────────────────────────────────────────────────────────
+
+@bp.route('/entities')
+@login_required
+def entities_list():
+    type_filter = request.args.get('type', '')
+    place_filter = request.args.get('place', '')
+
+    q = Entity.query
+    if type_filter in ('persona', 'empresa'):
+        q = q.filter_by(entity_type=type_filter)
+    if place_filter:
+        q = q.filter_by(place=place_filter)
+
+    entities = q.order_by(Entity.name).all()
+
+    cred_counts = {}
+    for e in entities:
+        cred_counts[e.id] = Credential.query.filter_by(entity_id=e.id).count()
+
+    places = sorted({e.place for e in Entity.query.all() if e.place})
+
+    return render_template('entities_list.html',
+                           entities=entities,
+                           cred_counts=cred_counts,
+                           type_filter=type_filter,
+                           place_filter=place_filter,
+                           places=places)
+
 
 @bp.route('/entity/<int:entity_id>')
 @login_required

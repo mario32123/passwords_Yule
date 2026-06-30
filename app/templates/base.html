@@ -68,6 +68,11 @@
             <i class="fas fa-home me-1"></i>Inicio
           </a>
         </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('main.entities_list') }}">
+            <i class="fas fa-list me-1"></i>Todas las Entidades
+          </a>
+        </li>
         {% if current_user.role in ['admin','editor'] %}
         <li class="nav-item">
           <a class="nav-link" href="{{ url_for('main.new_entity') }}">
