@@ -33,41 +33,50 @@
     <h6 class="d-flex align-items-center gap-2 mb-3">
       <i class="fas fa-bell text-danger"></i>
       <span>Obligaciones tributarias próximas <span class="badge bg-danger rounded-pill">{{ tax_alerts|length }}</span></span>
+      <button class="btn btn-sm btn-outline-danger ms-2" type="button"
+              data-bs-toggle="collapse" data-bs-target="#tax-alerts-panel"
+              aria-expanded="false" aria-controls="tax-alerts-panel"
+              id="tax-alerts-toggle-btn">
+        <i class="fas fa-eye me-1" id="tax-alerts-toggle-icon"></i>
+        <span id="tax-alerts-toggle-text">Ver detalles</span>
+      </button>
     </h6>
-    <div class="row g-2">
-      {% for alert in tax_alerts %}
-      {% set dl = alert.deadline %}
-      {% set emp = alert.empresa %}
-      {% set days = alert.days_left %}
-      <div class="col-12 col-md-6 col-lg-4">
-        <div class="card border-{{ dl.tax_color }} border-2 h-100">
-          <div class="card-body py-2 px-3">
-            <div class="d-flex align-items-center gap-2 mb-1">
-              <span class="badge bg-{{ dl.tax_color }}">
-                <i class="fas {{ dl.tax_icon }} me-1"></i>{{ dl.tax_label }}
-              </span>
-              {% if days == 0 %}
-              <span class="badge bg-danger ms-auto">¡HOY!</span>
-              {% elif days == 1 %}
-              <span class="badge bg-warning text-dark ms-auto">Mañana</span>
-              {% else %}
-              <span class="badge bg-secondary ms-auto">{{ days }} días</span>
-              {% endif %}
-            </div>
-            <a href="{{ url_for('main.entity_detail', entity_id=emp.id) }}"
-               class="text-decoration-none text-dark fw-semibold d-block text-truncate">
-              <i class="fas fa-building me-1 text-muted small"></i>{{ emp.name }}
-            </a>
-            <div class="text-muted small mt-1">
-              <i class="fas fa-calendar-day me-1"></i>{{ dl.period_label }}
-              &nbsp;·&nbsp;Vence
-              {{ dl.deadline_date.strftime('%d/%m/%Y') }}
-              &nbsp;·&nbsp;NIT …{{ dl.nit_digit }}
+    <div class="collapse" id="tax-alerts-panel">
+      <div class="row g-2">
+        {% for alert in tax_alerts %}
+        {% set dl = alert.deadline %}
+        {% set emp = alert.empresa %}
+        {% set days = alert.days_left %}
+        <div class="col-12 col-md-6 col-lg-4">
+          <div class="card border-{{ dl.tax_color }} border-2 h-100">
+            <div class="card-body py-2 px-3">
+              <div class="d-flex align-items-center gap-2 mb-1">
+                <span class="badge bg-{{ dl.tax_color }}">
+                  <i class="fas {{ dl.tax_icon }} me-1"></i>{{ dl.tax_label }}
+                </span>
+                {% if days == 0 %}
+                <span class="badge bg-danger ms-auto">¡HOY!</span>
+                {% elif days == 1 %}
+                <span class="badge bg-warning text-dark ms-auto">Mañana</span>
+                {% else %}
+                <span class="badge bg-secondary ms-auto">{{ days }} días</span>
+                {% endif %}
+              </div>
+              <a href="{{ url_for('main.entity_detail', entity_id=emp.id) }}"
+                 class="text-decoration-none text-dark fw-semibold d-block text-truncate">
+                <i class="fas fa-building me-1 text-muted small"></i>{{ emp.name }}
+              </a>
+              <div class="text-muted small mt-1">
+                <i class="fas fa-calendar-day me-1"></i>{{ dl.period_label }}
+                &nbsp;·&nbsp;Vence
+                {{ dl.deadline_date.strftime('%d/%m/%Y') }}
+                &nbsp;·&nbsp;NIT …{{ dl.nit_digit }}
+              </div>
             </div>
           </div>
         </div>
+        {% endfor %}
       </div>
-      {% endfor %}
     </div>
   </div>
   {% endif %}
@@ -189,4 +198,20 @@
 .card-hover { transition: transform .15s, box-shadow .15s; cursor: pointer; }
 .card-hover:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,.12); }
 </style>
+<script>
+(function() {
+  const panel = document.getElementById('tax-alerts-panel');
+  if (!panel) return;
+  const icon = document.getElementById('tax-alerts-toggle-icon');
+  const text = document.getElementById('tax-alerts-toggle-text');
+  panel.addEventListener('show.bs.collapse', function() {
+    icon.classList.replace('fa-eye', 'fa-eye-slash');
+    text.textContent = 'Ocultar detalles';
+  });
+  panel.addEventListener('hide.bs.collapse', function() {
+    icon.classList.replace('fa-eye-slash', 'fa-eye');
+    text.textContent = 'Ver detalles';
+  });
+})();
+</script>
 {% endblock %}
